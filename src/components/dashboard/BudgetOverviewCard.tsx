@@ -1,8 +1,9 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-interface BudgetCategory {
+interface Category {
   name: string;
   spent: number;
   budgeted: number;
@@ -10,44 +11,61 @@ interface BudgetCategory {
 }
 
 interface BudgetOverviewCardProps {
-  categories: BudgetCategory[];
+  categories: Category[];
 }
 
-export function BudgetOverviewCard({ categories }: BudgetOverviewCardProps) {
+export const BudgetOverviewCard = ({ categories }: BudgetOverviewCardProps) => {
+  const totalBudgeted = categories.reduce((sum, category) => sum + category.budgeted, 0);
+  const totalSpent = categories.reduce((sum, category) => sum + category.spent, 0);
+  const percentSpent = Math.round((totalSpent / totalBudgeted) * 100);
+
+  const getProgressColor = (spent: number, budgeted: number) => {
+    const percentage = (spent / budgeted) * 100;
+    if (percentage >= 100) return "bg-red-500";
+    if (percentage >= 80) return "bg-orange-500";
+    return "bg-green-500";
+  };
+
   return (
-    <Card className="animate-fade-in card-hover h-full">
-      <CardHeader>
-        <CardTitle>Monthly Budget Overview</CardTitle>
+    <Card className="budget-card">
+      <CardHeader className="pb-2">
+        <CardTitle>Budget Overview</CardTitle>
+        <CardDescription>Monthly budget breakdown</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {categories.map((category) => {
-            const percentSpent = Math.min(100, (category.spent / category.budgeted) * 100);
-            const isOverBudget = category.spent > category.budgeted;
-            
+      
+      <CardContent className="space-y-4">
+        <div className="flex justify-between mb-2">
+          <div>
+            <p className="text-sm text-muted-foreground">Total Budget</p>
+            <p className="text-2xl font-semibold">${totalBudgeted.toLocaleString()}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Spent</p>
+            <p className="text-2xl font-semibold">${totalSpent.toLocaleString()}</p>
+          </div>
+        </div>
+        
+        <div className="mt-6 space-y-4">
+          <div className="flex justify-between text-sm">
+            <span>Overall</span>
+            <span>{percentSpent}%</span>
+          </div>
+          <Progress value={percentSpent} className="h-2" />
+          
+          {categories.map((category, index) => {
+            const percentage = Math.round((category.spent / category.budgeted) * 100);
             return (
-              <div key={category.name} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div 
-                      className="h-3 w-3 rounded-full mr-2" 
-                      style={{ backgroundColor: category.color }}
-                    />
-                    <span className="text-sm font-medium">{category.name}</span>
-                  </div>
-                  <div className="text-sm">
-                    <span className={isOverBudget ? "text-budget-coral font-medium" : ""}>
-                      ${category.spent.toLocaleString()}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {` / $${category.budgeted.toLocaleString()}`}
-                    </span>
-                  </div>
+              <div key={index} className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>{category.name}</span>
+                  <span className="text-muted-foreground">
+                    ${category.spent.toLocaleString()} / ${category.budgeted.toLocaleString()} ({percentage}%)
+                  </span>
                 </div>
                 <Progress 
-                  value={percentSpent} 
-                  className="h-2" 
-                  indicatorClassName={isOverBudget ? "bg-budget-coral" : undefined}
+                  value={percentage} 
+                  className="h-2"
+                  // Removed the indicatorClassName prop
                 />
               </div>
             );
@@ -56,4 +74,4 @@ export function BudgetOverviewCard({ categories }: BudgetOverviewCardProps) {
       </CardContent>
     </Card>
   );
-}
+};

@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -12,14 +11,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Save } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+interface NotificationPreferences {
+  dailyTips: boolean;
+  goalReminders: boolean;
+  monthlyReports: boolean;
+  budgetAlerts: boolean;
+}
 
 interface UserSettings {
-  notification_preferences: {
-    dailyTips: boolean;
-    goalReminders: boolean;
-    monthlyReports: boolean;
-    budgetAlerts: boolean;
-  };
+  notification_preferences: NotificationPreferences;
   appearance: string;
 }
 
@@ -71,8 +73,18 @@ const Settings = () => {
 
       if (error) throw error;
       if (data) {
+        // Parse JSON data if needed
+        const notificationPreferences = typeof data.notification_preferences === 'string' 
+          ? JSON.parse(data.notification_preferences)
+          : data.notification_preferences;
+          
         setSettings({
-          notification_preferences: data.notification_preferences,
+          notification_preferences: {
+            dailyTips: notificationPreferences.dailyTips ?? true,
+            goalReminders: notificationPreferences.goalReminders ?? true,
+            monthlyReports: notificationPreferences.monthlyReports ?? true,
+            budgetAlerts: notificationPreferences.budgetAlerts ?? true,
+          },
           appearance: data.appearance,
         });
       }
