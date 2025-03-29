@@ -9,7 +9,188 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      education_progress: {
+        Row: {
+          badge: string | null
+          completed: boolean
+          id: string
+          lesson_id: string
+          quiz_score: number | null
+          streak_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge?: string | null
+          completed?: boolean
+          id?: string
+          lesson_id: string
+          quiz_score?: number | null
+          streak_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge?: string | null
+          completed?: boolean
+          id?: string
+          lesson_id?: string
+          quiz_score?: number | null
+          streak_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          created_at: string
+          current_amount: number | null
+          deadline: string | null
+          goal_name: string
+          id: string
+          target_amount: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_amount?: number | null
+          deadline?: string | null
+          goal_name: string
+          id?: string
+          target_amount: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_amount?: number | null
+          deadline?: string | null
+          goal_name?: string
+          id?: string
+          target_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          merchant: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          merchant: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          merchant?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_settings: {
+        Row: {
+          appearance: string
+          connected_accounts: Json | null
+          id: string
+          notification_preferences: Json | null
+          security_options: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          appearance?: string
+          connected_accounts?: Json | null
+          id?: string
+          notification_preferences?: Json | null
+          security_options?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          appearance?: string
+          connected_accounts?: Json | null
+          id?: string
+          notification_preferences?: Json | null
+          security_options?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          profile_picture: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          profile_picture?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          profile_picture?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

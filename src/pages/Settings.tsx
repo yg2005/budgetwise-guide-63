@@ -1,191 +1,310 @@
 
+import React, { useState, useEffect } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { 
-  User, 
-  Mail, 
-  Bell, 
-  Moon, 
-  Lock, 
-  Shield, 
-  CreditCard, 
-  RefreshCcw, 
-  Check 
-} from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { User, Save } from "lucide-react";
+
+interface UserSettings {
+  notification_preferences: {
+    dailyTips: boolean;
+    goalReminders: boolean;
+    monthlyReports: boolean;
+    budgetAlerts: boolean;
+  };
+  appearance: string;
+}
 
 const Settings = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState<UserSettings>({
+    notification_preferences: {
+      dailyTips: true,
+      goalReminders: true,
+      monthlyReports: true,
+      budgetAlerts: true,
+    },
+    appearance: "light",
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+      fetchUserSettings();
+    }
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("username")
+        .eq("id", user?.id)
+        .single();
+
+      if (error) throw error;
+      if (data) setUsername(data.username || "");
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
+
+  const fetchUserSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", user?.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setSettings({
+          notification_preferences: data.notification_preferences,
+          appearance: data.appearance,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching user settings:", error);
+    }
+  };
+
+  const updateUserProfile = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({ username })
+        .eq("id", user.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile information has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile: " + error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateUserSettings = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("user_settings")
+        .update({
+          notification_preferences: settings.notification_preferences,
+          appearance: settings.appearance,
+        })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Settings updated",
+        description: "Your settings have been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to update settings: " + error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNotificationChange = (key: string, value: boolean) => {
+    setSettings((prev) => ({
+      ...prev,
+      notification_preferences: {
+        ...prev.notification_preferences,
+        [key]: value,
+      },
+    }));
+  };
+
+  const handleAppearanceChange = (value: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      appearance: value,
+    }));
+  };
+
   return (
     <PageLayout title="Settings">
-      <div className="animate-fade-in space-y-8">
-        <p className="text-muted-foreground">Manage your account preferences and settings.</p>
-        
-        {/* Profile Section */}
-        <Card className="budget-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" /> Profile Information
-            </CardTitle>
-            <CardDescription>Manage your personal information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 md:items-center">
-              <div className="bg-muted h-24 w-24 rounded-full flex items-center justify-center">
-                <User className="h-12 w-12 text-muted-foreground" />
-              </div>
-              <div className="space-y-2 flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label htmlFor="name" className="text-sm font-medium">Full Name</label>
-                    <Input id="name" defaultValue="Jane Smith" />
+      <div className="animate-fade-in space-y-6 pb-16">
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="mb-8">
+            <TabsTrigger value="profile">
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="preferences">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="mr-2 h-4 w-4"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              Preferences
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="profile">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src="" />
+                    <AvatarFallback>{username ? username.slice(0, 2).toUpperCase() : user?.email?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium">{username || "Update your username"}</p>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
                   </div>
-                  <div className="space-y-1">
-                    <label htmlFor="email" className="text-sm font-medium">Email Address</label>
-                    <Input id="email" type="email" defaultValue="jane.smith@example.com" />
+                </div>
+
+                <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    type="text"
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter your username"
+                  />
+                </div>
+
+                <Button 
+                  onClick={updateUserProfile}
+                  disabled={loading}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {loading ? "Saving..." : "Save Profile"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="preferences">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification Preferences</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="dailyTips">Daily Financial Tips</Label>
+                    <Switch
+                      id="dailyTips"
+                      checked={settings.notification_preferences.dailyTips}
+                      onCheckedChange={(checked) => handleNotificationChange("dailyTips", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="goalReminders">Goal Reminders</Label>
+                    <Switch
+                      id="goalReminders"
+                      checked={settings.notification_preferences.goalReminders}
+                      onCheckedChange={(checked) => handleNotificationChange("goalReminders", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="monthlyReports">Monthly Reports</Label>
+                    <Switch
+                      id="monthlyReports"
+                      checked={settings.notification_preferences.monthlyReports}
+                      onCheckedChange={(checked) => handleNotificationChange("monthlyReports", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="budgetAlerts">Budget Alerts</Label>
+                    <Switch
+                      id="budgetAlerts"
+                      checked={settings.notification_preferences.budgetAlerts}
+                      onCheckedChange={(checked) => handleNotificationChange("budgetAlerts", checked)}
+                    />
                   </div>
                 </div>
-                <Button className="mt-2">Save Changes</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Notification Preferences */}
-        <Card className="budget-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" /> Notification Preferences
-            </CardTitle>
-            <CardDescription>Control when and how you receive notifications</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Daily Tips</p>
-                  <p className="text-sm text-muted-foreground">Receive daily financial tips and insights</p>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <Label>Appearance</Label>
+                    <div className="flex gap-4">
+                      <div
+                        className={`border rounded-md p-3 cursor-pointer flex items-center gap-2 ${
+                          settings.appearance === "light"
+                            ? "border-primary bg-primary/10"
+                            : ""
+                        }`}
+                        onClick={() => handleAppearanceChange("light")}
+                      >
+                        <div className="h-4 w-4 rounded-full bg-primary" />
+                        <span>Light</span>
+                      </div>
+                      <div
+                        className={`border rounded-md p-3 cursor-pointer flex items-center gap-2 ${
+                          settings.appearance === "dark"
+                            ? "border-primary bg-primary/10"
+                            : ""
+                        }`}
+                        onClick={() => handleAppearanceChange("dark")}
+                      >
+                        <div className="h-4 w-4 rounded-full bg-gray-800" />
+                        <span>Dark</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Monthly Reports</p>
-                  <p className="text-sm text-muted-foreground">Get a monthly summary of your financial activity</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Goal Reminders</p>
-                  <p className="text-sm text-muted-foreground">Receive reminders about your financial goals</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Budget Alerts</p>
-                  <p className="text-sm text-muted-foreground">Get alerts when you're close to exceeding budget limits</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Appearance */}
-        <Card className="budget-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Moon className="h-5 w-5" /> Appearance
-            </CardTitle>
-            <CardDescription>Customize how BudgetAI looks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Dark Mode</p>
-                <p className="text-sm text-muted-foreground">Switch between light and dark theme</p>
-              </div>
-              <Switch />
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Security Settings */}
-        <Card className="budget-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" /> Security
-            </CardTitle>
-            <CardDescription>Manage your account's security settings</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">Two-Factor Authentication</p>
-                  <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Check className="h-3 w-3" /> Active
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">Add an extra layer of security to your account</p>
-              </div>
-              <Button variant="outline">Configure</Button>
-            </div>
-            <div className="border-t border-border pt-4">
-              <Button variant="outline" className="flex items-center gap-1">
-                <Lock className="h-4 w-4" /> Change Password
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Connected Accounts */}
-        <Card className="budget-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" /> Connected Accounts
-            </CardTitle>
-            <CardDescription>Manage your linked financial accounts</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-full">
-                  <CreditCard className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium">Chase Banking</p>
-                  <p className="text-sm text-muted-foreground">Connected on Mar 15, 2023</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm">Disconnect</Button>
-            </div>
-            <div className="border-t border-border pt-4">
-              <Button className="flex items-center gap-1">
-                <RefreshCcw className="h-4 w-4" /> Sync Now
-              </Button>
-              <Button variant="outline" className="ml-2">Connect New Account</Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Account Actions */}
-        <Card className="budget-card">
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2">
-              Account Actions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-2">
-              <Button variant="outline">Download Your Data</Button>
-              <Button variant="destructive">Delete Account</Button>
-            </div>
-          </CardContent>
-        </Card>
+
+                <Button 
+                  onClick={updateUserSettings}
+                  disabled={loading}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {loading ? "Saving..." : "Save Preferences"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </PageLayout>
   );
