@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { BalanceCard } from "@/components/dashboard/BalanceCard";
@@ -145,18 +144,28 @@ const Dashboard = () => {
     color: cat.color
   }));
 
-  // Transform transactions for the RecentTransactionsCard
-  const recentTransactions = loading ? [] : transactions.map(tx => ({
+  // Define the type expected by RecentTransactionsCard (adjust if necessary based on its actual props)
+  type RecentTransactionDisplay = {
+    id: string;
+    payee: string;
+    category: string;
+    date: string;
+    amount: number;
+    type: "expense" | "income";
+  };
+
+  // Transform transactions for the RecentTransactionsCard, ensuring correct type
+  const recentTransactions: RecentTransactionDisplay[] = loading ? [] : transactions.map((tx): RecentTransactionDisplay => ({
     id: tx.id,
-    payee: tx.merchant,
-    category: tx.category.toLowerCase(),
+    payee: tx.merchant || 'N/A', // Add fallback for potentially missing merchant
+    category: tx.category?.toLowerCase() || 'uncategorized', // Handle potential null category
     date: new Date(tx.date).toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
     }),
     amount: tx.amount,
-    type: tx.amount < 0 ? "expense" : "income"
+    type: tx.amount < 0 ? "expense" : "income" // Type is now correctly inferred/checked
   }));
 
   return (
@@ -174,7 +183,16 @@ const Dashboard = () => {
           )}
         </div>
         <div>
-          <FinancialTipCard tip={financialTip.tip} category={financialTip.category} />
+          {/* Pass dynamic data fetched from Supabase */}
+          {loading ? (
+            <Skeleton className="h-[120px] w-full" /> // Show skeleton while loading parent data
+          ) : (
+            <FinancialTipCard 
+              userGoals={goals} 
+              userTransactions={transactions} 
+              userBalance={balanceData.currentBalance} 
+            />
+          )}
         </div>
         
         {/* New Row: Transaction Input */}
